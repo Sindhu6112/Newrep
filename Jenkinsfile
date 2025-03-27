@@ -1,42 +1,41 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_IMAGE = 'sindhu6112/my-app'
-    }
-
     stages {
-        stage('Clone Repo') {
-            steps {
-                git branch: 'main', url: 'https://github.com/Sindhu6112/Newrep.git'
-            }
+        stage('Clone') {
+            steps { git url: 'https://github.com/Sindhu6112/Newrep.git', branch: 'main' }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
-            }
+        
+        stage('Build') {
+            steps { sh 'docker build -t sindhu6112/my-app .' }
         }
-
-        stage('Push to Docker Hub') {
+        
+        stage('Push') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
-                    sh 'echo $DOCKER_PASSWORD | docker login -u sindhu6112 --password-stdin'
-                    sh 'docker push $DOCKER_IMAGE'
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-credentials',  // Using existing creds
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                        docker push sindhu6112/my-app:latest
+                    '''
                 }
             }
         }
-
-        stage('Deploy to Application Server') {
+        
+        stage('Deploy') {
             steps {
-                sshagent(['application-server-key']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'application-server-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@13.49.230.208 <<EOF
-                    docker stop my-app || true
-                    docker rm my-app || true
-                    docker pull sindhu6112/my-app
-                    docker run -d -p 80:80 --name my-app sindhu6112/my-app
-                    EOF
+                        ansible-playbook -i inventory.ini \
+                        --private-key "$SSH_KEY" \
+                        -u "$SSH_USER" \
+                        deploy.yml
                     '''
                 }
             }
