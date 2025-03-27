@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/Sindhu6112/Newrep.git'
+                git branch: 'main' , url:'https://github.com/Sindhu6112/Newrep.git'
             }
         }
         stage('Build Docker Image') {
