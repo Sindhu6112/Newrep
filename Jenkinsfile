@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'sindhu6112/my-app'  // Change this to your Docker Hub repo
+        DOCKER_IMAGE = 'sindhu6112/my-app'
     }
 
     stages {
@@ -20,15 +20,25 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                withDockerRegistry([credentialsId: 'docker-hub', url: '']) {
+                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
+                    sh 'echo $DOCKER_PASSWORD | docker login -u sindhu6112 --password-stdin'
                     sh 'docker push $DOCKER_IMAGE'
                 }
             }
         }
 
-        stage('Deploy with Ansible') {
+        stage('Deploy to Application Server') {
             steps {
-                sh 'ansible-playbook -i /etc/ansible/hosts deploy_app.yml'
+                sshagent(['application-server-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@13.49.230.208 <<EOF
+                    docker stop my-app || true
+                    docker rm my-app || true
+                    docker pull sindhu6112/my-app
+                    docker run -d -p 80:80 --name my-app sindhu6112/my-app
+                    EOF
+                    '''
+                }
             }
         }
     }
