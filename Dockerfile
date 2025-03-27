@@ -1,6 +1,4 @@
-cat > Dockerfile <<'EOF'
-FROM nginx:latest
-COPY index.html /usr/share/nginx/html/
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-EOF
+FROM ubuntu:latest
+WORKDIR /app
+COPY . .
+CMD ["echo", "Hello from Docker"]
