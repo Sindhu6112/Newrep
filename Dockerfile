@@ -1,11 +1,14 @@
-# Use official Nginx image
-FROM nginx:latest
+<!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+</head>
+<body>
 
-# Copy index.html or app files (if applicable)
-COPY . /usr/share/nginx/html
+<h1>Hello all!!</h1>
+<p>Sindhu here.</p>
 
-# Expose port 80
-EXPOSE 80
+</body>
+</html>
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+
